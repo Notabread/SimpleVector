@@ -49,7 +49,7 @@ public:
     ArrayPtr& operator=(const ArrayPtr&) = delete;
 
     //Конструктор перемещения
-    ArrayPtr(ArrayPtr&& other) {
+    ArrayPtr(ArrayPtr&& other) noexcept {
         MoveFrom(other);
     }
 

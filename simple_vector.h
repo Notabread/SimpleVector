@@ -8,14 +8,12 @@
 
 #include "array_ptr.h"
 
-class ReserveProxyObj {
-public:
-    ReserveProxyObj(size_t capacity_to_reserve) : value(capacity_to_reserve) {}
+struct ReserveProxyObj {
     size_t value = 0;
 };
 
 ReserveProxyObj Reserve(size_t capacity_to_reserve) {
-    return ReserveProxyObj(capacity_to_reserve);
+    return { capacity_to_reserve };
 }
 
 template <typename Type>
