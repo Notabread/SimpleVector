@@ -36,23 +36,21 @@ public:
 
     // Создаёт вектор из size элементов, инициализированных значением по умолчанию
     explicit SimpleVector(size_t size) {
-        ArrayPtr<Type> temp(size);
-        data_.swap(temp);
-        size_ = capacity_ = size;
+        Init(new Type[size], size);
     }
 
     // Создаёт вектор из size элементов, инициализированных значением value
     SimpleVector(size_t size, const Type& value) {
-        ArrayPtr<Type> temp(size, value);
-        data_.swap(temp);
-        size_ = capacity_ = size;
+        Type* raw_ptr = new Type[size];
+        std::fill(raw_ptr, raw_ptr + size, value);
+        Init(raw_ptr, size);
     }
 
     // Создаёт вектор из std::initializer_list
     SimpleVector(std::initializer_list<Type> init) {
-        ArrayPtr<Type> temp(init);
-        data_.swap(temp);
-        size_ = capacity_ = init.size();
+        Type* raw_ptr = new Type[init.size()];
+        std::copy(init.begin(), init.end(), raw_ptr);
+        Init(raw_ptr, init.size());
     }
 
     //Конструктор копирования
@@ -66,7 +64,6 @@ public:
     }
 
     SimpleVector& operator=(SimpleVector&& other) {
-        using namespace std;
         MoveFrom(other);
         return *this;
     }
@@ -96,15 +93,12 @@ public:
         return data_[index];
     }
 
-    // Возвращает константную ссылку на элемент с индексом index
+    // Возвращает ссылку на элемент с индексом index
     // Выбрасывает исключение std::out_of_range, если index >= size
     Type& At(size_t index) {
-        using namespace std::literals;
-        if (index >= size_) {
-            throw std::out_of_range("out of range"s);
-        }
-
-        return data_[index];
+        return const_cast<Type&>(
+                const_cast<const SimpleVector*>(this)->At(index)
+        );
     }
 
     // Возвращает константную ссылку на элемент с индексом index
@@ -125,30 +119,21 @@ public:
 
     // Изменяет размер массива.
     // При увеличении размера новые элементы получают значение по умолчанию для типа Type
-    void Resize(size_t new_size) {
-
-        //Меньше или равен текущему значению size_
-        if (new_size <= size_) {
-            size_ = new_size;
-            return;
-        }
-
-        //Меньше или равен вместимости capacity_
-        if (new_size <= capacity_) {
+    void Resize(const size_t new_size) {
+        //new_size меньше или равен вместимости capacity_, но больше, чем size_
+        if (new_size > size_ && new_size <= capacity_) {
             std::fill(end(), begin() + new_size, Type{});
-            size_ = new_size;
-            return;
+        } else { //Превышает вместимость
+            Reserve(new_size);
         }
-
-        //Превышает вместимость
-        Expand(new_size);
         size_ = new_size;
     }
 
     void Reserve(size_t new_capacity) {
-        if (capacity_ >= new_capacity) {
+        if (capacity_ != 0 && capacity_ >= new_capacity) {
             return;
         }
+        new_capacity = std::max(new_capacity, size_t(1));
         ArrayPtr<Type> temp(new_capacity);
         std::copy(std::make_move_iterator(begin()), std::make_move_iterator(end()),
                 temp.Get());
@@ -156,13 +141,9 @@ public:
         capacity_ = new_capacity;
     }
 
-    void Expand(size_t new_capacity) {
-        Reserve(new_capacity > 0 ? new_capacity : 1);
-    }
-
     void PushBack(const Type& value) {
         if (size_ == capacity_) {
-            Expand(capacity_ * 2);
+            Reserve(capacity_ * 2);
         }
         data_[size_] = value;
         ++size_;
@@ -171,7 +152,7 @@ public:
     //Перемещающий push_back
     void PushBack(Type&& value) {
         if (size_ == capacity_) {
-            Expand(capacity_ * 2);
+            Reserve(capacity_ * 2);
         }
         data_[size_] = std::move(value);
         ++size_;
@@ -181,15 +162,15 @@ public:
         int offset = pos - begin();
         Iterator true_position = begin() + offset;
         if (size_ == capacity_) {
-            Expand(capacity_ * 2);
+            Reserve(capacity_ * 2);
             true_position = begin() + offset;
         }
 
-        std::copy_backward(std::make_move_iterator(true_position), std::make_move_iterator(end()),
+        std::move_backward(std::make_move_iterator(true_position), std::make_move_iterator(end()),
                 end() + 1);
         *true_position = value;
         ++size_;
-        return begin() + offset;
+        return true_position;
     }
 
     //Перемещающий insert
@@ -197,24 +178,24 @@ public:
         int offset = pos - begin();
         Iterator true_position = begin() + offset;
         if (size_ == capacity_) {
-            Expand(capacity_ * 2);
+            Reserve(capacity_ * 2);
             true_position = begin() + offset;
         }
 
-        std::copy_backward(std::make_move_iterator(true_position), std::make_move_iterator(end()),
+        std::move_backward(std::make_move_iterator(true_position), std::make_move_iterator(end()),
                            end() + 1);
         *true_position = std::move(value);
         ++size_;
-        return begin() + offset;
+        return true_position;
     }
 
     Iterator Erase(ConstIterator pos) {
         int offset = pos - begin();
         Iterator true_position = begin() + offset;
-        std::copy(std::make_move_iterator(true_position + 1), std::make_move_iterator(end()),
+        std::move(std::make_move_iterator(true_position + 1), std::make_move_iterator(end()),
                 true_position);
         --size_;
-        return begin() + offset;
+        return true_position;
     }
 
     void PopBack() noexcept {
@@ -291,6 +272,12 @@ private:
         data_ = std::move(other.data_);
         size_ = std::exchange(other.size_, 0);
         capacity_ = std::exchange(other.capacity_, 0);
+    }
+
+    void Init(Type* raw_ptr, size_t size) {
+        ArrayPtr temp(raw_ptr);
+        data_.swap(temp);
+        size_ = capacity_ = size;
     }
 
 };
