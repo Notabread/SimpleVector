@@ -36,21 +36,19 @@ public:
 
     // Создаёт вектор из size элементов, инициализированных значением по умолчанию
     explicit SimpleVector(size_t size) {
-        Init(new Type[size], size);
+        ArrayPtr<Type> temp(size);
+        data_.swap(temp);
+        size_ = capacity_ = size;
     }
 
     // Создаёт вектор из size элементов, инициализированных значением value
-    SimpleVector(size_t size, const Type& value) {
-        Type* raw_ptr = new Type[size];
-        std::fill(raw_ptr, raw_ptr + size, value);
-        Init(raw_ptr, size);
+    SimpleVector(size_t size, const Type& value) : SimpleVector(size) {
+        std::fill(begin(), end(), value);
     }
 
     // Создаёт вектор из std::initializer_list
-    SimpleVector(std::initializer_list<Type> init) {
-        Type* raw_ptr = new Type[init.size()];
-        std::copy(init.begin(), init.end(), raw_ptr);
-        Init(raw_ptr, init.size());
+    SimpleVector(std::initializer_list<Type> init) : SimpleVector(init.size()) {
+        std::copy(init.begin(), init.end(), begin());
     }
 
     //Конструктор копирования
@@ -135,8 +133,7 @@ public:
         }
         new_capacity = std::max(new_capacity, size_t(1));
         ArrayPtr<Type> temp(new_capacity);
-        std::copy(std::make_move_iterator(begin()), std::make_move_iterator(end()),
-                temp.Get());
+        std::copy(std::make_move_iterator(begin()), std::make_move_iterator(end()), temp.Get());
         data_.swap(temp);
         capacity_ = new_capacity;
     }
@@ -272,12 +269,6 @@ private:
         data_ = std::move(other.data_);
         size_ = std::exchange(other.size_, 0);
         capacity_ = std::exchange(other.capacity_, 0);
-    }
-
-    void Init(Type* raw_ptr, size_t size) {
-        ArrayPtr temp(raw_ptr);
-        data_.swap(temp);
-        size_ = capacity_ = size;
     }
 
 };
