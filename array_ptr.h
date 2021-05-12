@@ -19,24 +19,6 @@ public:
         raw_ptr_ = new Type[size]{};
     }
 
-    //Инициализация значением value
-    explicit ArrayPtr(size_t size, const Type& value) {
-        if (size == 0) {
-            return;
-        }
-        raw_ptr_ = new Type[size];
-        std::fill(raw_ptr_, raw_ptr_ + size, value);
-    }
-
-    ArrayPtr(std::initializer_list<Type> init) {
-        raw_ptr_ = new Type[init.size()];
-        int counter = 0;
-        for (auto it = init.begin(); it != init.end(); ++it) {
-            raw_ptr_[counter] = *it;
-            ++counter;
-        }
-    }
-
     // Конструктор из сырого указателя, хранящего адрес массива в куче либо nullptr
     explicit ArrayPtr(Type* raw_ptr) noexcept {
         raw_ptr_ = raw_ptr;
@@ -49,7 +31,7 @@ public:
     ArrayPtr& operator=(const ArrayPtr&) = delete;
 
     //Конструктор перемещения
-    ArrayPtr(ArrayPtr&& other) {
+    ArrayPtr(ArrayPtr&& other) noexcept {
         MoveFrom(other);
     }
 

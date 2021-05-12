@@ -6,20 +6,20 @@
 
 using namespace std;
 
-class X {
+class NoCopyObj {
 public:
-    X()
-            : X(5) {
+    NoCopyObj()
+            : NoCopyObj(5) {
     }
-    X(size_t num)
+    NoCopyObj(size_t num)
             : x_(num) {
     }
-    X(const X& other) = delete;
-    X& operator=(const X& other) = delete;
-    X(X&& other) {
+    NoCopyObj(const NoCopyObj& other) = delete;
+    NoCopyObj& operator=(const NoCopyObj& other) = delete;
+    NoCopyObj(NoCopyObj&& other) {
         x_ = exchange(other.x_, 0);
     }
-    X& operator=(X&& other) {
+    NoCopyObj& operator=(NoCopyObj&& other) {
         x_ = exchange(other.x_, 0);
         return *this;
     }
@@ -82,12 +82,12 @@ void TestNamedMoveOperator() {
 void TestNoncopiableMoveConstructor() {
     const size_t size = 5;
     cout << "Test noncopiable object, move constructor" << endl;
-    SimpleVector<X> vector_to_move;
+    SimpleVector<NoCopyObj> vector_to_move;
     for (size_t i = 0; i < size; ++i) {
-        vector_to_move.PushBack(X(i));
+        vector_to_move.PushBack(NoCopyObj(i));
     }
 
-    SimpleVector<X> moved_vector = move(vector_to_move);
+    SimpleVector<NoCopyObj> moved_vector = move(vector_to_move);
     assert(moved_vector.GetSize() == size);
     assert(vector_to_move.GetSize() == 0);
 
@@ -100,9 +100,9 @@ void TestNoncopiableMoveConstructor() {
 void TestNoncopiablePushBack() {
     const size_t size = 5;
     cout << "Test noncopiable push back" << endl;
-    SimpleVector<X> v;
+    SimpleVector<NoCopyObj> v;
     for (size_t i = 0; i < size; ++i) {
-        v.PushBack(X(i));
+        v.PushBack(NoCopyObj(i));
     }
 
     assert(v.GetSize() == size);
@@ -116,21 +116,21 @@ void TestNoncopiablePushBack() {
 void TestNoncopiableInsert() {
     const size_t size = 5;
     cout << "Test noncopiable insert" << endl;
-    SimpleVector<X> v;
+    SimpleVector<NoCopyObj> v;
     for (size_t i = 0; i < size; ++i) {
-        v.PushBack(X(i));
+        v.PushBack(NoCopyObj(i));
     }
 
     // в начало
-    v.Insert(v.begin(), X(size + 1));
+    v.Insert(v.begin(), NoCopyObj(size + 1));
     assert(v.GetSize() == size + 1);
     assert(v.begin()->GetX() == size + 1);
     // в конец
-    v.Insert(v.end(), X(size + 2));
+    v.Insert(v.end(), NoCopyObj(size + 2));
     assert(v.GetSize() == size + 2);
     assert((v.end() - 1)->GetX() == size + 2);
     // в середину
-    v.Insert(v.begin() + 3, X(size + 3));
+    v.Insert(v.begin() + 3, NoCopyObj(size + 3));
     assert(v.GetSize() == size + 3);
     assert((v.begin() + 3)->GetX() == size + 3);
     cout << "Done!" << endl << endl;
@@ -139,9 +139,9 @@ void TestNoncopiableInsert() {
 void TestNoncopiableErase() {
     const size_t size = 3;
     cout << "Test noncopiable erase" << endl;
-    SimpleVector<X> v;
+    SimpleVector<NoCopyObj> v;
     for (size_t i = 0; i < size; ++i) {
-        v.PushBack(X(i));
+        v.PushBack(NoCopyObj(i));
     }
 
     auto it = v.Erase(v.begin());
@@ -158,5 +158,14 @@ int main() {
     TestNoncopiablePushBack();
     TestNoncopiableInsert();
     TestNoncopiableErase();
+
+
+    SimpleVector<string> kek = {"kek"s, "lol"s};
+
+    kek.At(0) = "arbidol"s;
+
+    cout << kek.At(0);
+
+
     return 0;
 }
